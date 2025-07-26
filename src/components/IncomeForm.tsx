@@ -1,36 +1,51 @@
+import React from "react";
 import { Button } from "./Button";
+import { FieldErrors, UseFormRegister } from "react-hook-form";
 
-export function IncomeForm({
-  handleAddSource,
-  handleAddIncome,
-  handleAddAmount,
-  handleAddDate,
-}) {
+type IncomeInput = {
+  source: string;
+  amount: number;
+  date?: string;
+};
+
+type Props = {
+  register: UseFormRegister<IncomeInput>;
+  errors: FieldErrors<IncomeInput>;
+  onSubmit: React.FormEventHandler<HTMLFormElement>;
+};
+
+export function IncomeForm({ register, errors, onSubmit }: Props) {
   return (
-    <form onSubmit={handleAddIncome}>
+    <form onSubmit={onSubmit}>
       <div>
-        <label htmlFor="source">Income Source:</label>
+        <label htmlFor="source">Income source:</label>
         <input
           type="text"
           id="source"
-          name="source"
-          onChange={handleAddSource}
+          {...register("source")}
+          aria-invalid={errors.source ? "true" : "false"}
         />
+        {errors.source && <p role="alert">{errors.source.message}</p>}
       </div>
+
       <div>
-        <label htmlFor="amount">Amount of income: </label>
+        <label htmlFor="amount">Amount of Income:</label>
         <input
-          type="text"
+          type="number"
           id="amount"
-          name="amount"
-          onChange={handleAddAmount}
+          {...register("amount", { valueAsNumber: true })}
+          aria-invalid={errors.amount ? "true" : "false"}
+          min="0"
         />
+        {errors.amount && <p role="alert">{errors.amount.message}</p>}
       </div>
+
       <div>
-        <label htmlFor="date">Date of income: </label>
-        <input type="date" id="date" name="date" onChange={handleAddDate} />
+        <label htmlFor="date">Date of income:</label>
+        <input type="date" id="date" {...register("date")} />
       </div>
-      <Button label="Add Income" />
+
+      <Button label="Add Income" type="submit" />
     </form>
   );
 }

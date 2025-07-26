@@ -1,59 +1,69 @@
 import { IncomeForm } from "./IncomeForm";
-import { useState } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-export function IncomeWrapper({ setIncomes, incomes }) {
-  const [source, setSource] = useState("");
-  const [amount, setAmount] = useState(0);
-  const [date, setDate] = useState("");
+const incomeSchema = z.object({
+  source: z.string().min(1, "Source is required"),
+  amount: z.number().positive("Amount must be positive"),
+  date: z.string().optional(),
+});
 
-  const handleAddSource = (e) => {
-    const value = e.target.value;
-    setSource(value);
-    console.log("source:", source);
-    //   console.log(e.target.value);
-  };
+type IncomeInput = z.infer<typeof incomeSchema>;
 
-  const handleAddAmount = (e) => {
-    const value = e.target.value;
-    setAmount(value);
-  };
-  const handleAddDate = (e) => {
-    const value = e.target.value;
-    setDate(value);
-    //   console.log(e.target.value);
-  };
+type IncomeType = IncomeInput & { id: string };
 
-  const handleAddIncome = (e) => {
-    e.preventDefault();
-    // console.log("submitting");
+type Props = {
+  incomes: IncomeType[];
+  setIncomes: React.Dispatch<React.SetStateAction<IncomeType[]>>;
+  onDelete?: (id: string) => void;
+};
 
-    const newIncome = {
-      source: source,
-      amount: amount,
-      date: new Date().toLocaleDateString(),
+export function IncomeWrapper({ incomes, setIncomes, onDelete }: Props) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<IncomeInput>({
+    resolver: zodResolver(incomeSchema),
+    defaultValues: {
+      source: "",
+      amount: 0,
+      date: "",
+    },
+  });
+
+  const onSubmit = (data: IncomeInput) => {
+    const newIncome: IncomeType = {
+      id: Date.now().toString(),
+      ...data,
+      amount: Number(data.amount),
+      date: data.date || new Date().toLocaleDateString(),
     };
 
     setIncomes([...incomes, newIncome]);
+    reset();
   };
 
   return (
     <>
       <IncomeForm
-        handleAddSource={handleAddSource}
-        handleAddIncome={handleAddIncome}
-        handleAddAmount={handleAddAmount}
-        handleAddDate={handleAddDate}
+        register={register}
+        errors={errors}
+        onSubmit={handleSubmit(onSubmit)}
       />
       <ul>
-        {incomes.map((income) => {
-          return (
-            <li>
-              <p>{income.source}</p>
-              <p>{income.amount}</p>
-              <p>{income.date}</p>
-            </li>
-          );
-        })}
+        {incomes.map((income) => (
+          <li key={income.id}>
+            <p>{income.source}</p>
+            <p>{income.amount}</p>
+            <p>{income.date}</p>
+            {onDelete && (
+              <button onClick={() => onDelete(income.id)}>Delete</button>
+            )}
+          </li>
+        ))}
       </ul>
     </>
   );

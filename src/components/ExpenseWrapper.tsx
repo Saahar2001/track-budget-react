@@ -1,62 +1,69 @@
 import { ExpenseForm } from "./ExpenseForm";
-import { useState } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-export function ExpenseWrapper({ setExpenses, Expenses }) {
-  const [source, setSource] = useState("");
-  const [amount, setAmount] = useState(0);
-  const [date, setDate] = useState("");
+const expenseSchema = z.object({
+  source: z.string().min(1, "Source is required"),
+  amount: z.number().positive("Amount must be positive"),
+  date: z.string().optional(),
+});
 
-  const handleAddSource = (e) => {
-    const value = e.target.value;
-    setSource(value);
-    console.log("source:", source);
-    //   console.log(e.target.value);
-  };
+type ExpenseInput = z.infer<typeof expenseSchema>;
 
-  const handleAddAmount = (e) => {
-    const value = e.target.value;
-    setAmount(value);
-    //  console.log("source:", source);
-    //   console.log(e.target.value);
-  };
-  const handleAddDate = (e) => {
-    const value = e.target.value;
-    setDate(value);
-    //  console.log("source:", source);
-    //   console.log(e.target.value);
-  };
+type ExpenseType = ExpenseInput & { id: string };
 
-  const handleAddExpense = (e) => {
-    e.preventDefault();
-    // console.log("submitting");
+type Props = {
+  expenses: ExpenseType[];
+  setExpenses: React.Dispatch<React.SetStateAction<ExpenseType[]>>;
+  onDelete?: (id: string) => void;
+};
 
-    const newExpense = {
-      source: source,
-      amount: amount,
-      date: new Date().toLocaleDateString(),
+export function ExpenseWrapper({ expenses, setExpenses, onDelete }: Props) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ExpenseInput>({
+    resolver: zodResolver(expenseSchema),
+    defaultValues: {
+      source: "",
+      amount: 0,
+      date: "",
+    },
+  });
+
+  const onSubmit = (data: ExpenseInput) => {
+    const newExpense: ExpenseType = {
+      id: Date.now().toString(),
+      ...data,
+      amount: Number(data.amount),
+      date: data.date || new Date().toLocaleDateString(),
     };
 
-    setExpenses([...Expenses, newExpense]);
+    setExpenses([...expenses, newExpense]);
+    reset();
   };
 
   return (
     <>
       <ExpenseForm
-        handleAddSource={handleAddSource}
-        handleAddExpense={handleAddExpense}
-        handleAddAmount={handleAddAmount}
-        handleAddDate={handleAddDate}
+        register={register}
+        errors={errors}
+        onSubmit={handleSubmit(onSubmit)}
       />
       <ul>
-        {Expenses.map((Expense) => {
-          return (
-            <li>
-              <p>{Expense.source}</p>
-              <p>{Expense.amount}</p>
-              <p>{Expense.date}</p>
-            </li>
-          );
-        })}
+        {expenses.map((expense) => (
+          <li key={expense.id}>
+            <p>{expense.source}</p>
+            <p>{expense.amount}</p>
+            <p>{expense.date}</p>
+            {onDelete && (
+              <button onClick={() => onDelete(expense.id)}>Delete</button>
+            )}
+          </li>
+        ))}
       </ul>
     </>
   );

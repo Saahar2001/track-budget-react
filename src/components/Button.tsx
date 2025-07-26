@@ -1,6 +1,7 @@
 //rfc
-export function Button({ label }) {
-  return <button>{label}</button>;
+export function Button({
+  label,
+  ...props
+}: { label: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button {...props}>{label}</button>;
 }
-
-//export default button;
